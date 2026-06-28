@@ -1,0 +1,76 @@
+DESIGN-
+
+module baud_gen #(
+    parameter CLOCK_FREQ = 50_000_000,
+    parameter BAUD_RATE  = 115200
+)(
+    input  logic clk,
+    input  logic rst,
+
+    output logic baud_tick
+);
+
+    localparam integer BAUD_DIV = CLOCK_FREQ / BAUD_RATE;
+    localparam integer CNT_WIDTH = $clog2(BAUD_DIV);
+
+    logic [CNT_WIDTH-1:0] count;
+
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            count     <= '0;
+            baud_tick <= 1'b0;
+        end
+        else begin
+            if (count == BAUD_DIV-1) begin
+                count     <= '0;
+                baud_tick <= 1'b1;
+            end
+            else begin
+                count     <= count + 1'b1;
+                baud_tick <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+
+TESTBENCH-
+
+module tb;
+
+    logic clk;
+    logic rst;
+    logic baud_tick;
+
+    
+    baud_gen #(
+        .CLOCK_FREQ(100),
+        .BAUD_RATE(10)
+    ) dut (
+        .clk(clk),
+        .rst(rst),
+        .baud_tick(baud_tick)
+    );
+
+        initial begin
+        $dumpfile("dump.vcd");
+        $dumpvars(0, tb);
+    end
+
+        initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+        initial begin
+        rst = 1;
+        #20;
+        rst = 0;
+
+        
+        #400;
+
+        $finish;
+    end
+
+endmodule
